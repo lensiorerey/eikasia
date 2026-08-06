@@ -57,4 +57,4 @@ demo.
 The separation of roles is crucial. Prospectors (SDRs) handle Suspects and Prospects, filtering
 out the noise. They only hand off **Qualified Leads** to the Closers (Account Executives). This
 specialization ensures that Account Executives spend 100% of their time selling to companies
-that actually have the budget and need to deploy the solutio
+that actually have the budget and need to deploy the solution.
