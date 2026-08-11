@@ -216,9 +216,8 @@ export const GarminDashboard = ({ onOpenGuide }) => {
 
       const dbSessions = await dbService.getSessions();
       if (dbSessions && dbSessions.length > 0) {
-        const combined = [...dbSessions, ...initialSessions.filter((init) => !dbSessions.some((d) => d.id === init.id))];
-        setSessions(combined);
-        setSelectedSessionId(combined[0].id);
+        setSessions(dbSessions);
+        setSelectedSessionId(dbSessions[0].id);
       }
     }
     loadDbData();
