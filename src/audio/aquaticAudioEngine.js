@@ -138,6 +138,36 @@ class AquaticAudioEngine {
     }
   }
 
+  // Water Splash Sound FX
+  playSplash() {
+    this.playBubbleSound();
+  }
+
+  // Sonar Ping Sound FX
+  playSonar() {
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.4);
+
+      gain.gain.setValueAtTime(0.1 * this.volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } catch (e) {
+      // Audio context safety fallback
+    }
+  }
+
   startBubbleGenerator() {
     if (this.bubbleTimer) clearInterval(this.bubbleTimer);
     this.bubbleTimer = setInterval(() => {

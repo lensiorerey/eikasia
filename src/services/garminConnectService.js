@@ -21,7 +21,7 @@ export const garminConnectService = {
       title: 'Iniciando autenticación cifrada...',
       detail: `Estableciendo handshake con la API de Garmin Connect para ${email}`,
     });
-    await delay(1200);
+    await delay(250);
 
     // Step 2: Authenticating Credentials
     onProgressStep({
@@ -29,7 +29,7 @@ export const garminConnectService = {
       title: 'Verificando credenciales de usuario...',
       detail: 'Validando token de autorización OAuth2 / Cookie de sesión de Garmin',
     });
-    await delay(1500);
+    await delay(300);
 
     // Step 3: Fetching Swim Workouts Telemetry from Garmin Connect
     onProgressStep({
@@ -37,7 +37,7 @@ export const garminConnectService = {
       title: 'Obteniendo historial de natación Garmin...',
       detail: 'Descargando métricas de distancia, SWOLF, ritmos/100m y zonas de ritmo cardíaco',
     });
-    await delay(1600);
+    await delay(300);
 
     // Generate real-world structured Garmin Swim Sessions for the user
     const fetchedSessions = generateGarminLiveSessions(email);
@@ -50,7 +50,7 @@ export const garminConnectService = {
     });
 
     const dbResult = await dbService.saveSessionsBatch(fetchedSessions);
-    await delay(1000);
+    await delay(200);
 
     // Update connection status in local/remote DB
     const connectionInfo = {
