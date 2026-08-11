@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { GarminConnectModal } from './GarminConnectModal';
+import { dbService } from '../services/firebaseService';
+import { garminConnectService } from '../services/garminConnectService';
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -197,6 +201,24 @@ export const GarminDashboard = ({ onOpenGuide }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [isGarminConnectOpen, setIsGarminConnectOpen] = useState(false);
+  const [dbStatus, setDbStatus] = useState({ isConnected: false });
+
+  // Load Database sessions on mount
+  useEffect(() => {
+    async function loadDbData() {
+      const status = await dbService.getConnectionStatus();
+      setDbStatus(status);
+
+      const dbSessions = await dbService.getSessions();
+      if (dbSessions && dbSessions.length > 0) {
+        const combined = [...dbSessions, ...initialSessions.filter((init) => !dbSessions.some((d) => d.id === init.id))];
+        setSessions(combined);
+        setSelectedSessionId(combined[0].id);
+      }
+    }
+    loadDbData();
+  }, []);
 
   // Manual Form State
   const [manualDist, setManualDist] = useState(2000);
@@ -205,6 +227,7 @@ export const GarminDashboard = ({ onOpenGuide }) => {
   const [manualPool, setManualPool] = useState(25);
 
   const currentSession = sessions.find((s) => s.id === selectedSessionId) || sessions[0];
+
 
   // Helper format seconds to mm:ss
   const formatTime = (totalSeconds) => {
@@ -532,11 +555,22 @@ export const GarminDashboard = ({ onOpenGuide }) => {
 
         <div className="flex flex-wrap gap-3">
           <button
+            onClick={() => {
+              aquaticAudio.playBubbleSound();
+              setIsGarminConnectOpen(true);
+            }}
+            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-biolum-cyan via-ocean-600 to-biolum-teal hover:from-biolum-cyan hover:to-biolum-teal text-white border border-biolum-cyan/60 shadow-lg shadow-biolum-cyan/20 flex items-center gap-2 transition-all"
+          >
+            <Zap className="w-4 h-4 text-amber-300 animate-pulse" />
+            Conectar Garmin (Directo BD)
+          </button>
+
+          <button
             onClick={onOpenGuide}
             className="glass-button px-4 py-2.5 rounded-xl text-xs font-semibold text-biolum-cyan flex items-center gap-2"
           >
             <HelpCircle className="w-4 h-4" />
-            Guía de Sincronización Garmin
+            Guía Sincronización
           </button>
           
           <button
@@ -849,6 +883,19 @@ export const GarminDashboard = ({ onOpenGuide }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Garmin Connect Direct Login & DB Modal */}
+      <GarminConnectModal
+        isOpen={isGarminConnectOpen}
+        onClose={() => setIsGarminConnectOpen(false)}
+        onSyncComplete={(newSessions) => {
+          if (newSessions && newSessions.length > 0) {
+            setSessions((prev) => [...newSessions, ...prev.filter((p) => !newSessions.some((n) => n.id === p.id))]);
+            setSelectedSessionId(newSessions[0].id);
+          }
+          garminConnectService.getStatus().then(setDbStatus);
+        }}
+      />
 
     </div>
   );
