@@ -34,13 +34,6 @@ export const garminConnectService = {
       sessions: fetchedSessions,
       newAdded: dbResult.newAdded,
     };
-
-    return {
-      success: true,
-      connectionInfo,
-      sessions: fetchedSessions,
-      newAdded: dbResult.newAdded,
-    };
   },
 
   /**
