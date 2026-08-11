@@ -647,36 +647,64 @@ export const GarminDashboard = ({ onOpenGuide }) => {
         <div className="glass-panel p-5 rounded-2xl border border-ocean-700 space-y-3">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
             <span>Historial de Actividades</span>
-            <span className="text-biolum-cyan">{sessions.length} Sesiones</span>
+            <button
+              onClick={() => {
+                const realOnly = sessions.filter((s) => s.source || s.id.startsWith('garmin-manual') || s.id.startsWith('garmin-real'));
+                if (realOnly.length > 0) {
+                  setSessions(realOnly);
+                  setSelectedSessionId(realOnly[0].id);
+                } else {
+                  setSessions([]);
+                }
+              }}
+              className="text-[10px] text-amber-300 hover:underline hover:text-white"
+            >
+              Borrar Datos de Ejemplo
+            </button>
           </div>
 
           <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-            {sessions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setSelectedSessionId(s.id);
-                  aquaticAudio.playBubbleSound();
-                }}
-                className={`w-full text-left p-3.5 rounded-xl transition-all border ${
-                  s.id === selectedSessionId
-                    ? 'bg-ocean-800/90 border-biolum-cyan text-white shadow-lg shadow-biolum-cyan/10'
-                    : 'bg-ocean-900/40 border-ocean-800 text-slate-300 hover:bg-ocean-800/40'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <span className="font-semibold text-sm line-clamp-1">{s.title}</span>
-                  <span className="text-[10px] text-biolum-cyan font-mono bg-biolum-cyan/10 px-2 py-0.5 rounded border border-biolum-cyan/20">
-                    {s.date}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-2 font-mono">
-                  <span>🏊 {s.totalDistance}m</span>
-                  <span>⏱️ {formatTime(s.totalTimeSeconds)}</span>
-                  <span>⚡ SWOLF: <strong className="text-biolum-emerald">{s.avgSwolf}</strong></span>
-                </div>
-              </button>
-            ))}
+            {sessions.map((s) => {
+              const isRealData = s.source || s.id.startsWith('garmin-manual') || s.id.startsWith('garmin-real') || s.id.startsWith('garmin-live');
+
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    setSelectedSessionId(s.id);
+                    aquaticAudio.playBubbleSound();
+                  }}
+                  className={`w-full text-left p-3.5 rounded-xl transition-all border ${
+                    s.id === selectedSessionId
+                      ? 'bg-ocean-800/90 border-biolum-cyan text-white shadow-lg shadow-biolum-cyan/10'
+                      : 'bg-ocean-900/40 border-ocean-800 text-slate-300 hover:bg-ocean-800/40'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-0.5">
+                      <span className="font-semibold text-sm line-clamp-1">{s.title}</span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold border inline-block ${
+                          isRealData
+                            ? 'bg-biolum-emerald/20 text-biolum-emerald border-biolum-emerald/40'
+                            : 'bg-amber-400/15 text-amber-300 border-amber-400/30'
+                        }`}
+                      >
+                        {isRealData ? '🟢 TUS DATOS GARMIN REALES' : '🟡 DATO DE EJEMPLO / DEMO'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-biolum-cyan font-mono bg-biolum-cyan/10 px-2 py-0.5 rounded border border-biolum-cyan/20 shrink-0">
+                      {s.date}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-400 mt-2 font-mono">
+                    <span>🏊 {s.totalDistance}m</span>
+                    <span>⏱️ {formatTime(s.totalTimeSeconds)}</span>
+                    <span>⚡ SWOLF: <strong className="text-biolum-emerald">{s.avgSwolf}</strong></span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
