@@ -450,11 +450,18 @@ export const GarminDashboard = ({ onOpenGuide }) => {
           </button>
           
           <button
-            onClick={() => setShowManualForm(!showManualForm)}
-            className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-ocean-800 hover:bg-ocean-700 text-white border border-ocean-600 flex items-center gap-2 transition-all"
+            onClick={async () => {
+              aquaticAudio.playSplash();
+              await dbService.clearAll();
+              setSessions([]);
+              setSelectedSessionId(null);
+              window.location.reload();
+            }}
+            className="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5 transition-all"
+            title="Borrar memoria del navegador y resetear datos"
           >
-            <PlusCircle className="w-4 h-4 text-biolum-emerald" />
-            Registrar Sesión Manual
+            <RefreshCw className="w-3.5 h-3.5" />
+            Resetear Memoria
           </button>
         </div>
       </div>
