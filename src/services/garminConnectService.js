@@ -15,44 +15,10 @@ export const garminConnectService = {
       throw new Error('Debes ingresar tu correo electrónico y contraseña de Garmin Connect.');
     }
 
-    // Step 1: Initiating Secure Session Handshake
-    onProgressStep({
-      step: 1,
-      title: 'Iniciando autenticación cifrada...',
-      detail: `Estableciendo handshake con la API de Garmin Connect para ${email}`,
-    });
-    await delay(250);
-
-    // Step 2: Authenticating Credentials
-    onProgressStep({
-      step: 2,
-      title: 'Verificando credenciales de usuario...',
-      detail: 'Validando token de autorización OAuth2 / Cookie de sesión de Garmin',
-    });
-    await delay(300);
-
-    // Step 3: Fetching Swim Workouts Telemetry from Garmin Connect
-    onProgressStep({
-      step: 3,
-      title: 'Obteniendo historial de natación Garmin...',
-      detail: 'Descargando métricas de distancia, SWOLF, ritmos/100m y zonas de ritmo cardíaco',
-    });
-    await delay(300);
-
-    // Generate real-world structured Garmin Swim Sessions for the user
+    // Step 1: Instant Sync
     const fetchedSessions = generateGarminLiveSessions(email);
-
-    // Step 4: Persisting Telemetry to Database (Firebase Firestore)
-    onProgressStep({
-      step: 4,
-      title: 'Guardando datos en la Base de Datos (Firestore)...',
-      detail: `Insertando ${fetchedSessions.length} entrenamientos en la colección de la base de datos`,
-    });
-
     const dbResult = await dbService.saveSessionsBatch(fetchedSessions);
-    await delay(200);
 
-    // Update connection status in local/remote DB
     const connectionInfo = {
       isConnected: true,
       userEmail: email,
@@ -62,12 +28,12 @@ export const garminConnectService = {
     };
     await dbService.saveConnectionStatus(connectionInfo);
 
-    // Step 5: Finalization
-    onProgressStep({
-      step: 5,
-      title: '¡Conexión y Sincronización Exitosa!',
-      detail: 'Los datos están vinculados y sincronizados en tiempo real.',
-    });
+    return {
+      success: true,
+      connectionInfo,
+      sessions: fetchedSessions,
+      newAdded: dbResult.newAdded,
+    };
 
     return {
       success: true,

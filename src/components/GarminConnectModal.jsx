@@ -159,6 +159,9 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
       if (onSyncComplete) {
         onSyncComplete(result.sessions);
       }
+      setTimeout(() => {
+        onClose();
+      }, 300);
     } catch (err) {
       console.error(err);
       setIsLoading(false);
