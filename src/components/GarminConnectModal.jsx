@@ -9,14 +9,10 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
-  Server,
   Zap,
-  LogOut,
   UploadCloud,
-  FileText,
-  Info,
   ExternalLink,
-  ChevronRight,
+  Info,
   Sliders,
 } from 'lucide-react';
 import { garminConnectService } from '../services/garminConnectService';
@@ -24,15 +20,15 @@ import { dbService } from '../services/firebaseService';
 import { aquaticAudio } from '../audio/aquaticAudioEngine';
 
 export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
-  const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'real_metrics'
+  const [activeTab, setActiveTab] = useState('credentials'); // 'credentials' | 'upload' | 'metrics'
   const [email, setEmail] = useState('');
-  
-  // Real metrics inputs
+  const [password, setPassword] = useState('');
+
+  // Custom metrics inputs
   const [realDist, setRealDist] = useState(2000);
   const [realTimeMin, setRealTimeMin] = useState(35);
   const [realSwolf, setRealSwolf] = useState(33);
   const [realPoolLen, setRealPoolLen] = useState(25);
-  const [realHr, setRealHr] = useState(145);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -55,7 +51,40 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
 
   if (!isOpen) return null;
 
-  // Handle Real Garmin CSV / FIT File Upload directly into Database
+  // Handle Credentials Login Submit (Email + Password)
+  const handleCredentialsSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setIsLoading(true);
+
+    try {
+      aquaticAudio.playSplash();
+    } catch (err) {}
+
+    try {
+      const result = await garminConnectService.connectAndSync(email, password);
+
+      try {
+        aquaticAudio.playSonar();
+      } catch (err) {}
+
+      setConnectionInfo(result.connectionInfo);
+      setIsLoading(false);
+
+      if (onSyncComplete) {
+        onSyncComplete(result.sessions);
+      }
+      setTimeout(() => {
+        onClose();
+      }, 300);
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+      setErrorMessage(err.message || 'Error al conectar con los servidores de Garmin.');
+    }
+  };
+
+  // Handle Real Garmin File Upload (.CSV / .FIT)
   const handleFileUpload = (file) => {
     if (!file) return;
     setIsLoading(true);
@@ -64,7 +93,7 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
 
     try {
       aquaticAudio.playSplash();
-    } catch (e) {}
+    } catch (err) {}
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -116,14 +145,14 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
 
       if (parsedSessions.length > 0) {
         await dbService.saveSessionsBatch(parsedSessions);
-        await garminConnectService.connectAndSync(email || 'usuario_garmin_real@connect.com', 'dummy');
+        await garminConnectService.connectAndSync(email || 'usuario_garmin@connect.com', 'dummy');
 
         try {
           aquaticAudio.playSonar();
-        } catch (e) {}
+        } catch (err) {}
 
         setIsLoading(false);
-        setUploadSuccess(`¡Éxito! Se importaron ${parsedSessions.length} actividades reales y se guardaron en la Base de Datos.`);
+        setUploadSuccess(`¡Éxito! Se importaron ${parsedSessions.length} actividades reales.`);
         if (onSyncComplete) {
           onSyncComplete(parsedSessions);
         }
@@ -137,16 +166,10 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
     reader.readAsText(file);
   };
 
-  // Handle Real Metrics Form Submit
-  const handleRealMetricsSubmit = async (e) => {
+  // Handle Real Metrics Manual Entry
+  const handleMetricsSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
     setIsLoading(true);
-
-    try {
-      aquaticAudio.playSplash();
-    } catch (e) {}
-
     const userLabel = email ? email.split('@')[0] : 'Nadador';
     const timeSecs = Number(realTimeMin) * 60;
     const pace100Secs = Math.round(timeSecs / (Number(realDist) / 100));
@@ -163,15 +186,15 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
       totalTimeSeconds: timeSecs,
       avgSwolf: Number(realSwolf),
       avgPace100m: paceStr,
-      avgHeartRate: Number(realHr),
-      maxHeartRate: Number(realHr) + 20,
+      avgHeartRate: 145,
+      maxHeartRate: 168,
       totalStrokes: Math.round((Number(realDist) / Number(realPoolLen)) * 15),
       calories: Math.round(Number(realDist) * 0.22),
       trainingLoad: Math.round(Number(realDist) * 0.06),
-      source: 'Métricas Reales de Garmin Registradas por el Usuario',
+      source: 'Métricas Reales Registradas por el Usuario',
       laps: [
-        { lap: 1, dist: Number(realDist) / 2, pace: paceStr, swolf: Number(realSwolf), strokes: 15, hr: Number(realHr) },
-        { lap: 2, dist: Number(realDist) / 2, pace: paceStr, swolf: Number(realSwolf) + 1, strokes: 15, hr: Number(realHr) + 4 },
+        { lap: 1, dist: Number(realDist) / 2, pace: paceStr, swolf: Number(realSwolf), strokes: 15, hr: 142 },
+        { lap: 2, dist: Number(realDist) / 2, pace: paceStr, swolf: Number(realSwolf) + 1, strokes: 15, hr: 148 },
       ],
       strokesDistribution: { freestyle: 90, backstroke: 10, breaststroke: 0, butterfly: 0 },
       hrZones: { z1: 20, z2: 60, z3: 20, z4: 0 },
@@ -182,13 +205,13 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
 
     try {
       aquaticAudio.playSonar();
-    } catch (e) {}
+    } catch (err) {}
 
     setIsLoading(false);
     if (onSyncComplete) {
       onSyncComplete([realSession]);
     }
-    setTimeout(() => onClose(), 400);
+    setTimeout(() => onClose(), 300);
   };
 
   return (
@@ -210,44 +233,121 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
           </div>
           <div>
             <h2 className="text-2xl font-bold font-heading text-white flex items-center gap-2">
-              Sincronización Garmin Real
+              Conexión Garmin Connect
               <span className="text-xs px-2 py-0.5 rounded-full bg-biolum-cyan/20 text-biolum-cyan border border-biolum-cyan/40 font-mono">
-                Firestore DB
+                API & DB
               </span>
             </h2>
             <p className="text-sm text-slate-300">
-              Guarda tus datos exactos de natación Garmin en la Base de Datos.
+              Conecta tu cuenta de Garmin Connect para sincronizar a la Base de Datos.
             </p>
           </div>
         </div>
 
         {/* Tab Selector */}
-        <div className="flex items-center gap-2 bg-ocean-950 p-1 rounded-xl border border-ocean-700">
+        <div className="flex items-center gap-2 bg-ocean-950 p-1 rounded-xl border border-ocean-700 text-xs font-bold">
           <button
-            onClick={() => setActiveTab('upload')}
-            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'upload'
+            onClick={() => setActiveTab('credentials')}
+            className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'credentials'
                 ? 'bg-biolum-cyan text-ocean-950 shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <UploadCloud className="w-4 h-4" />
-            1. Subir Archivo Real Garmin (.CSV/.FIT)
+            <Zap className="w-4 h-4" />
+            1. Login Credenciales (Email & Password)
           </button>
           <button
-            onClick={() => setActiveTab('real_metrics')}
-            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'real_metrics'
+            onClick={() => setActiveTab('upload')}
+            className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'upload'
                 ? 'bg-biolum-emerald text-ocean-950 shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Sliders className="w-4 h-4" />
-            2. Ingresar Mis Métricas Reales
+            <UploadCloud className="w-4 h-4" />
+            2. Archivo .CSV/.FIT
           </button>
         </div>
 
-        {/* TAB 1: Upload Real File */}
+        {/* TAB 1: Credentials Login (Email AND Password) */}
+        {activeTab === 'credentials' && (
+          <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+            {errorMessage && (
+              <div className="p-3.5 bg-rose-500/15 border border-rose-500/40 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Email Field */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-biolum-cyan" />
+                Correo Electrónico de Garmin Connect
+              </label>
+              <input
+                type="email"
+                required
+                disabled={isLoading}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ejemplo@deportista.com"
+                className="w-full px-4 py-2.5 rounded-xl bg-ocean-950 border border-ocean-700 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-biolum-cyan"
+              />
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-biolum-cyan" />
+                Contraseña de Garmin Connect
+              </label>
+              <input
+                type="password"
+                required
+                disabled={isLoading}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="w-full px-4 py-2.5 rounded-xl bg-ocean-950 border border-ocean-700 text-slate-100 placeholder-slate-500 text-sm font-mono focus:outline-none focus:border-biolum-cyan"
+              />
+            </div>
+
+            {/* Database target info */}
+            <div className="p-3.5 bg-ocean-900/60 rounded-xl border border-ocean-750 text-xs text-slate-300 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 font-semibold text-biolum-teal">
+                <Database className="w-4 h-4" /> Destino Base de Datos:
+              </span>
+              <span className="text-[11px] text-biolum-cyan font-mono font-bold">Firebase Firestore Cloud 🟢</span>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-biolum-cyan via-ocean-600 to-biolum-teal hover:from-biolum-cyan hover:to-biolum-teal border border-biolum-cyan/50 text-xs flex items-center justify-center gap-2 shadow-lg shadow-biolum-cyan/20 transition-all disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Autenticando y Sincronizando BD...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 text-amber-300" />
+                  Conectar Garmin & Sincronizar Base de Datos
+                </>
+              )}
+            </button>
+
+            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 pt-2 border-t border-ocean-800">
+              <ShieldCheck className="w-4 h-4 text-biolum-emerald" />
+              <span>Conexión cifrada SSL/TLS. Credenciales protegidas.</span>
+            </div>
+          </form>
+        )}
+
+        {/* TAB 2: File Upload (.CSV / .FIT) */}
         {activeTab === 'upload' && (
           <div className="space-y-4">
             <div className="border-2 border-dashed border-biolum-cyan/50 hover:border-biolum-cyan rounded-2xl p-6 text-center bg-ocean-950/60 transition-all space-y-3">
@@ -279,89 +379,6 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
               </div>
             )}
           </div>
-        )}
-
-        {/* TAB 2: Custom Real Metrics Form */}
-        {activeTab === 'real_metrics' && (
-          <form onSubmit={handleRealMetricsSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300">Correo Electrónico de Garmin</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu_email@ejemplo.com"
-                className="w-full px-4 py-2 rounded-xl bg-ocean-950 border border-ocean-700 text-slate-100 text-xs focus:outline-none focus:border-biolum-cyan"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-300">Distancia Real (Metros)</label>
-                <input
-                  type="number"
-                  required
-                  value={realDist}
-                  onChange={(e) => setRealDist(e.target.value)}
-                  placeholder="ej. 2000"
-                  className="w-full px-3 py-2 rounded-xl bg-ocean-950 border border-ocean-700 text-slate-100 text-xs focus:outline-none focus:border-biolum-cyan"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-300">Tiempo Total (Minutos)</label>
-                <input
-                  type="number"
-                  required
-                  value={realTimeMin}
-                  onChange={(e) => setRealTimeMin(e.target.value)}
-                  placeholder="ej. 35"
-                  className="w-full px-3 py-2 rounded-xl bg-ocean-950 border border-ocean-700 text-slate-100 text-xs focus:outline-none focus:border-biolum-cyan"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-300">SWOLF Real de tu Garmin Watch</label>
-                <input
-                  type="number"
-                  required
-                  value={realSwolf}
-                  onChange={(e) => setRealSwolf(e.target.value)}
-                  placeholder="ej. 32"
-                  className="w-full px-3 py-2 rounded-xl bg-ocean-950 border border-ocean-700 text-slate-100 text-xs focus:outline-none focus:border-biolum-cyan font-bold text-biolum-cyan"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-300">Largo de Piscina (m)</label>
-                <select
-                  value={realPoolLen}
-                  onChange={(e) => setRealPoolLen(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-ocean-950 border border-ocean-700 text-slate-100 text-xs focus:outline-none focus:border-biolum-cyan"
-                >
-                  <option value={25}>25m (Piscina Corta)</option>
-                  <option value={50}>50m (Piscina Olímpica)</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 px-4 rounded-xl font-bold text-ocean-950 bg-biolum-emerald hover:bg-white border border-biolum-emerald/50 text-xs flex items-center justify-center gap-2 shadow-lg shadow-biolum-emerald/20 transition-all"
-            >
-              {isLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Guardando métricas...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4" /> Guardar Mis Métricas Reales en Base de Datos
-                </>
-              )}
-            </button>
-          </form>
         )}
 
       </div>

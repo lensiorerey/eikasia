@@ -1,25 +1,18 @@
 import React, { useState } from 'react';
 import { WaterBackground } from './components/WaterBackground';
 import { GarminDashboard } from './components/GarminDashboard';
-import { PredictableRevenueSection } from './components/PredictableRevenueSection';
 import { GarminIntegrationGuideModal } from './components/GarminIntegrationGuideModal';
 import { aquaticAudio } from './audio/aquaticAudioEngine';
 import {
   Waves,
-  TrendingUp,
-  Volume2,
-  VolumeX,
   Play,
   Pause,
   Sparkles,
-  Github,
-  FileText,
-  HelpCircle,
-  Award,
+  Swords,
+  Trophy,
 } from 'lucide-react';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState('swim'); // 'swim' | 'revenue'
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioVolume, setAudioVolume] = useState(0.25);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -58,50 +51,23 @@ export function App() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-extrabold font-heading text-white tracking-tight">
-                    AQUATIC<span className="text-biolum-cyan">HUB</span>
+                    SWIM<span className="text-biolum-cyan">CONNECT PRO</span>
                   </h1>
                   <span className="n64-badge text-[9px] font-retro bg-amber-500 text-ocean-950 px-2 py-0.5 rounded font-black tracking-widest">
-                    N64 VIBE
+                    GARMIN 2.0
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-300 font-mono">
-                  Garmin Swim Analytics &amp; Predictable Revenue
+                  Plataforma de Eficiencia Hidrodinámica &amp; Comparación de Nadadores
                 </p>
               </div>
             </div>
 
-            {/* Central Navigation Tabs */}
-            <nav className="hidden md:flex items-center gap-2 bg-ocean-950/80 p-1.5 rounded-2xl border border-ocean-700">
-              <button
-                onClick={() => {
-                  setActiveTab('swim');
-                  aquaticAudio.playBubbleSound();
-                }}
-                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'swim'
-                    ? 'bg-biolum-cyan text-ocean-950 shadow-lg shadow-biolum-cyan/30'
-                    : 'text-slate-300 hover:text-white hover:bg-ocean-800/50'
-                }`}
-              >
-                <Waves className="w-4 h-4" />
-                Garmin Swim Analytics
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveTab('revenue');
-                  aquaticAudio.playBubbleSound();
-                }}
-                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'revenue'
-                    ? 'bg-biolum-emerald text-ocean-950 shadow-lg shadow-biolum-emerald/30'
-                    : 'text-slate-300 hover:text-white hover:bg-ocean-800/50'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4" />
-                Predictable Revenue Framework
-              </button>
-            </nav>
+            {/* Center Info Badge */}
+            <div className="hidden lg:flex items-center gap-2 text-xs font-mono text-biolum-teal bg-ocean-950/80 px-4 py-2 rounded-2xl border border-ocean-750">
+              <Trophy className="w-4 h-4 text-amber-300" />
+              <span>Optimización SWOLF &amp; Simulador 2D</span>
+            </div>
 
             {/* Right Tools: Audio Synthesizer Controls */}
             <div className="flex items-center gap-3">
@@ -137,49 +103,25 @@ export function App() {
             </div>
 
           </div>
-
-          {/* Mobile Tab Switcher */}
-          <div className="md:hidden flex border-t border-ocean-800 bg-ocean-950/90">
-            <button
-              onClick={() => setActiveTab('swim')}
-              className={`flex-1 py-3 text-center text-xs font-bold border-b-2 ${
-                activeTab === 'swim' ? 'border-biolum-cyan text-biolum-cyan' : 'border-transparent text-slate-400'
-              }`}
-            >
-              🏊 Natación Garmin
-            </button>
-            <button
-              onClick={() => setActiveTab('revenue')}
-              className={`flex-1 py-3 text-center text-xs font-bold border-b-2 ${
-                activeTab === 'revenue' ? 'border-biolum-emerald text-biolum-emerald' : 'border-transparent text-slate-400'
-              }`}
-            >
-              📈 Predictable Revenue
-            </button>
-          </div>
         </header>
 
         {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-biolum-cyan/10 border border-biolum-cyan/30 text-biolum-cyan mb-4 animate-bounce">
-            <Sparkles className="w-4 h-4" />
-            Elegancia Acuática &amp; Rendimiento de Alto Nivel
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-biolum-cyan/10 border border-biolum-cyan/30 text-biolum-cyan mb-3 animate-bounce">
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            100% Enfocado en Eficiencia de Natación &amp; Telemetría Garmin Connect
           </div>
           <h2 className="text-4xl sm:text-5xl font-black font-heading text-white tracking-tight max-w-4xl mx-auto leading-tight">
-            Visualiza tu <span className="text-shimmer">Rendimiento de Natación</span> &amp; Escala tus Ingresos
+            Mejora tu <span className="text-shimmer">Técnica de Natación</span> &amp; Compara tu Desempeño
           </h2>
-          <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mt-3 font-normal">
-            Plataforma interactiva con análisis SWOLF de Garmin Connect, gráficos inmersivos y simulador del framework <em className="text-biolum-cyan font-serif">Predictable Revenue</em>.
+          <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mt-2 font-normal">
+            Conecta tu reloj Garmin Connect, analiza tu índice SWOLF, distancia por brazada (DPS) y compara métricas cabeza a cabeza con otros nadadores.
           </p>
         </section>
 
-        {/* Dynamic Content View */}
+        {/* Main Dashboard View */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          {activeTab === 'swim' ? (
-            <GarminDashboard onOpenGuide={() => setIsGuideOpen(true)} />
-          ) : (
-            <PredictableRevenueSection />
-          )}
+          <GarminDashboard onOpenGuide={() => setIsGuideOpen(true)} />
         </main>
 
       </div>
@@ -189,7 +131,6 @@ export function App() {
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
         onSyncDemo={() => {
-          setActiveTab('swim');
           aquaticAudio.playBubbleSound();
         }}
       />
@@ -199,16 +140,7 @@ export function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-2">
             <Waves className="w-4 h-4 text-biolum-cyan" />
-            <span>Desarrollado para seguimiento de Natación Garmin &amp; Ventas B2B Predecibles</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <a
-              href="file:///Users/alejandrozacharias/Desktop/eikasia/Predictable_Revenue_Framework.md"
-              className="text-biolum-cyan hover:underline flex items-center gap-1"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              Predictable_Revenue_Framework.md
-            </a>
+            <span>Plataforma de Seguimiento de Natación Garmin &amp; Análisis Biomecánico 60 FPS</span>
           </div>
         </div>
       </footer>
