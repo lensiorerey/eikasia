@@ -53,8 +53,24 @@ ChartJS.register(
   Filler
 );
 
-// Initial Sessions: Empty array so no mock/fake sessions are shown
-const initialSessions = [];
+const emptyDefaultSession = {
+  id: 'empty',
+  date: new Date().toISOString().split('T')[0],
+  title: 'Sin Datos Garmin Cargados',
+  poolLength: 25,
+  totalDistance: 0,
+  totalTimeSeconds: 0,
+  avgSwolf: 0,
+  avgPace100m: '0:00',
+  avgHeartRate: 0,
+  maxHeartRate: 0,
+  totalStrokes: 0,
+  calories: 0,
+  trainingLoad: 0,
+  laps: [],
+  strokesDistribution: { freestyle: 100, backstroke: 0, breaststroke: 0, butterfly: 0 },
+  hrZones: { z1: 0, z2: 0, z3: 0, z4: 0 },
+};
 
 export const GarminDashboard = ({ onOpenGuide }) => {
   const [sessions, setSessions] = useState([]);
@@ -86,7 +102,7 @@ export const GarminDashboard = ({ onOpenGuide }) => {
   const [manualStrokesPerLap, setManualStrokesPerLap] = useState(15);
   const [manualPool, setManualPool] = useState(25);
 
-  const currentSession = sessions.find((s) => s.id === selectedSessionId) || sessions[0];
+  const currentSession = sessions.find((s) => s.id === selectedSessionId) || sessions[0] || emptyDefaultSession;
 
 
   // Helper format seconds to mm:ss

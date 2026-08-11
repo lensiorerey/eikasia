@@ -17,13 +17,16 @@ export const dbService = {
     }
   },
 
-  // Save multiple sessions to Database
+  // Save multiple sessions to Database (Replaces or appends real user items)
   async saveSessionsBatch(sessions) {
     try {
       const existing = await this.getSessions();
-      const existingIds = new Set(existing.map((s) => s.id));
+      const realExisting = existing.filter(
+        (s) => s.source || s.id.startsWith('garmin-real') || s.id.startsWith('garmin-manual')
+      );
+      const existingIds = new Set(realExisting.map((s) => s.id));
       const newItems = sessions.filter((s) => !existingIds.has(s.id));
-      const updated = [...newItems, ...existing];
+      const updated = [...newItems, ...realExisting];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       return { success: true, count: updated.length, newAdded: newItems.length };
     } catch (err) {
@@ -32,15 +35,27 @@ export const dbService = {
     }
   },
 
-  // Get all swim sessions from Database
+  // Get all swim sessions from Database (Filters out legacy mock data)
   async getSessions() {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      // Filter out legacy hardcoded mock sessions completely
+      const realOnly = parsed.filter(
+        (s) => s.source || s.id.startsWith('garmin-real') || s.id.startsWith('garmin-manual')
+      );
+      return realOnly;
     } catch (err) {
       console.error('Error fetching sessions from DB:', err);
       return [];
     }
+  },
+
+  // Clear all stored data
+  async clearAll() {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(CONNECTION_KEY);
   },
 
   // Save Garmin user connection status
@@ -64,6 +79,7 @@ export const dbService = {
   // Clear connection
   async disconnect() {
     localStorage.removeItem(CONNECTION_KEY);
+    localStorage.removeItem(STORAGE_KEY);
     return { isConnected: false, userEmail: null };
   },
 };
