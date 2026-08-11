@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { GarminConnectModal } from './GarminConnectModal';
 import { SwimEfficiencyHeroBlock } from './SwimEfficiencyHeroBlock';
+import { SwimStrokeSimulator } from './SwimStrokeSimulator';
 import { dbService } from '../services/firebaseService';
 import { garminConnectService } from '../services/garminConnectService';
+
 
 
 import {
@@ -587,6 +589,9 @@ export const GarminDashboard = ({ onOpenGuide }) => {
 
       {/* Hero Swimming Efficiency & Biomechanics Block */}
       <SwimEfficiencyHeroBlock session={currentSession} allSessions={sessions} />
+
+      {/* Interactive Biomechanical Stroke Simulator & Head-to-Head Comparison */}
+      <SwimStrokeSimulator session={currentSession} allSessions={sessions} />
 
       {/* Manual Entry Form Collapsible */}
       {showManualForm && (
