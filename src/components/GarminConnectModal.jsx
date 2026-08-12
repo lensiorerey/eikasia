@@ -107,38 +107,99 @@ export const GarminConnectModal = ({ isOpen, onClose, onSyncComplete }) => {
       }
 
       let parsedSessions = [];
-      const isHeader = lines[0].toLowerCase().includes('date') || lines[0].toLowerCase().includes('fecha') || lines[0].toLowerCase().includes('tipo');
-      const dataLines = isHeader ? lines.slice(1) : lines;
+      const headerLine = lines[0];
+      const headers = headerLine.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((h) => h.replace(/^"|"$/g, '').trim().toLowerCase());
+
+      const distIdx = headers.findIndex((h) => h.includes('distance') || h.includes('distancia'));
+      const timeIdx = headers.findIndex((h) => h.includes('time') || h.includes('tiempo'));
+      const swolfIdx = headers.findIndex((h) => h.includes('swolf'));
+      const hrIdx = headers.findIndex((h) => h.includes('avg hr') || h.includes('frecuencia') || h.includes('hr'));
+      const maxHrIdx = headers.findIndex((h) => h.includes('max hr'));
+      const strokesIdx = headers.findIndex((h) => h.includes('strokes') || h.includes('brazadas'));
+      const dateIdx = headers.findIndex((h) => h.includes('date') || h.includes('fecha'));
+      const titleIdx = headers.findIndex((h) => h.includes('title') || h.includes('título'));
+      const paceIdx = headers.findIndex((h) => h.includes('avg pace') || h.includes('ritmo'));
+
+      const dataLines = lines.slice(1);
 
       dataLines.forEach((line, idx) => {
-        const cols = line.split(',').map((c) => c.replace(/"/g, '').trim());
+        const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((c) => c.replace(/^"|"$/g, '').trim());
         if (cols.length < 2) return;
 
-        const numCols = cols.map((c) => parseFloat(c.replace(/,/g, ''))).filter((n) => !isNaN(n));
-        const distVal = numCols.find((n) => n >= 100 && n <= 15000) || 2000;
-        const swolfVal = numCols.find((n) => n >= 20 && n <= 65) || 34;
-        const hrVal = numCols.find((n) => n >= 80 && n <= 205) || 145;
+        // Parse Distance (handling "3,225" or "2,625")
+        let distVal = 2000;
+        if (distIdx !== -1 && cols[distIdx]) {
+          const parsedD = parseFloat(cols[distIdx].replace(/,/g, ''));
+          if (!isNaN(parsedD) && parsedD > 0) distVal = parsedD;
+        }
+
+        // Parse SWOLF
+        let swolfVal = 34;
+        if (swolfIdx !== -1 && cols[swolfIdx]) {
+          const parsedS = parseFloat(cols[swolfIdx]);
+          if (!isNaN(parsedS) && parsedS > 0) swolfVal = parsedS;
+        }
+
+        // Parse Heart Rate
+        let hrVal = 142;
+        if (hrIdx !== -1 && cols[hrIdx]) {
+          const parsedH = parseFloat(cols[hrIdx]);
+          if (!isNaN(parsedH) && parsedH > 0) hrVal = parsedH;
+        }
+
+        // Parse Max HR
+        let maxHrVal = hrVal + 18;
+        if (maxHrIdx !== -1 && cols[maxHrIdx]) {
+          const parsedMH = parseFloat(cols[maxHrIdx]);
+          if (!isNaN(parsedMH) && parsedMH > 0) maxHrVal = parsedMH;
+        }
+
+        // Parse Strokes
+        let strokesVal = Math.round((distVal / 25) * 15);
+        if (strokesIdx !== -1 && cols[strokesIdx]) {
+          const parsedSt = parseFloat(cols[strokesIdx].replace(/,/g, ''));
+          if (!isNaN(parsedSt) && parsedSt > 0) strokesVal = parsedSt;
+        }
+
+        // Parse Date
+        let dateVal = new Date().toISOString().split('T')[0];
+        if (dateIdx !== -1 && cols[dateIdx]) {
+          const matchD = cols[dateIdx].match(/\d{4}-\d{2}-\d{2}/);
+          if (matchD) dateVal = matchD[0];
+        }
+
+        // Title
+        let titleVal = `Natación Garmin Real (${Math.round(distVal)}m)`;
+        if (titleIdx !== -1 && cols[titleIdx] && cols[titleIdx] !== '--') {
+          titleVal = `${cols[titleIdx]} (${Math.round(distVal)}m)`;
+        }
+
+        // Pace
+        let paceVal = '1:30';
+        if (paceIdx !== -1 && cols[paceIdx] && cols[paceIdx].includes(':')) {
+          paceVal = cols[paceIdx];
+        }
 
         parsedSessions.push({
           id: `garmin-real-file-${Date.now()}-${idx}`,
-          date: new Date().toISOString().split('T')[0],
-          title: `Entrenamiento Garmin Real (${distVal}m)`,
+          date: dateVal,
+          title: titleVal,
           poolLength: 25,
           totalDistance: Math.round(distVal),
           totalTimeSeconds: Math.round((distVal / 100) * 90),
           avgSwolf: Math.round(swolfVal),
-          avgPace100m: '1:30',
+          avgPace100m: paceVal,
           avgHeartRate: Math.round(hrVal),
-          maxHeartRate: Math.round(hrVal + 20),
-          totalStrokes: Math.round((distVal / 25) * 15),
+          maxHeartRate: Math.round(maxHrVal),
+          totalStrokes: Math.round(strokesVal),
           calories: Math.round(distVal * 0.22),
           trainingLoad: Math.round(distVal * 0.06),
           source: 'Archivo Exportado de Garmin Connect (.CSV/.FIT)',
           laps: [
-            { lap: 1, dist: distVal / 2, pace: '1:30', swolf: Math.round(swolfVal), strokes: 15, hr: Math.round(hrVal) },
-            { lap: 2, dist: distVal / 2, pace: '1:30', swolf: Math.round(swolfVal + 1), strokes: 15, hr: Math.round(hrVal + 5) },
+            { lap: 1, dist: Math.round(distVal / 2), pace: paceVal, swolf: Math.round(swolfVal), strokes: Math.round(strokesVal / 2), hr: Math.round(hrVal) },
+            { lap: 2, dist: Math.round(distVal / 2), pace: paceVal, swolf: Math.round(swolfVal + 1), strokes: Math.round(strokesVal / 2), hr: Math.round(hrVal + 4) },
           ],
-          strokesDistribution: { freestyle: 100, backstroke: 0, breaststroke: 0, butterfly: 0 },
+          strokesDistribution: { freestyle: 95, backstroke: 5, breaststroke: 0, butterfly: 0 },
           hrZones: { z1: 20, z2: 60, z3: 20, z4: 0 },
         });
       });

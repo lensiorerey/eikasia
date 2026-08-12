@@ -151,78 +151,101 @@ export const GarminDashboard = ({ onOpenGuide }) => {
         }
 
         if (isMultiActivityFile) {
-          lines.forEach((line, idx) => {
-            if (idx === 0 && (line.toLowerCase().includes('date') || line.toLowerCase().includes('fecha') || line.toLowerCase().includes('tipo'))) {
-              return; // Header line
-            }
+          const headerLine = lines[0];
+          const headers = headerLine.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((h) => h.replace(/^"|"$/g, '').trim().toLowerCase());
 
-            const cols = line.split(',').map((c) => c.replace(/"/g, '').trim());
+          const distIdx = headers.findIndex((h) => h.includes('distance') || h.includes('distancia'));
+          const timeIdx = headers.findIndex((h) => h.includes('time') || h.includes('tiempo'));
+          const swolfIdx = headers.findIndex((h) => h.includes('swolf'));
+          const hrIdx = headers.findIndex((h) => h.includes('avg hr') || h.includes('frecuencia') || h.includes('hr'));
+          const maxHrIdx = headers.findIndex((h) => h.includes('max hr'));
+          const strokesIdx = headers.findIndex((h) => h.includes('strokes') || h.includes('brazadas'));
+          const dateIdx = headers.findIndex((h) => h.includes('date') || h.includes('fecha'));
+          const titleIdx = headers.findIndex((h) => h.includes('title') || h.includes('título'));
+          const paceIdx = headers.findIndex((h) => h.includes('avg pace') || h.includes('ritmo'));
+
+          const dataLines = lines.slice(1);
+
+          dataLines.forEach((line, idx) => {
+            const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((c) => c.replace(/^"|"$/g, '').trim());
             if (cols.length < 2) return;
 
-            // Try to extract date, distance, time, swolf, hr
-            let sessionDate = new Date().toISOString().split('T')[0];
-            const dateMatch = cols.find((c) => /^\d{4}-\d{2}-\d{2}/.test(c) || /^\d{2}\/\d{2}\/\d{4}/.test(c) || /^\d{4}\/\d{2}\/\d{2}/.test(c));
-            if (dateMatch) sessionDate = dateMatch;
+            let distVal = 2000;
+            if (distIdx !== -1 && cols[distIdx]) {
+              const parsedD = parseFloat(cols[distIdx].replace(/,/g, ''));
+              if (!isNaN(parsedD) && parsedD > 0) distVal = parsedD;
+            }
 
-            // Numbers in row
-            const numCols = cols.map((c) => parseFloat(c.replace(/,/g, ''))).filter((n) => !isNaN(n));
-            
-            // Distance (metres: 100m to 15000m)
-            const distVal = numCols.find((n) => n >= 100 && n <= 15000);
-            const dist = distVal ? Math.round(distVal) : Math.round(1500 + Math.random() * 2000);
+            let swolfVal = 34;
+            if (swolfIdx !== -1 && cols[swolfIdx]) {
+              const parsedS = parseFloat(cols[swolfIdx]);
+              if (!isNaN(parsedS) && parsedS > 0) swolfVal = parsedS;
+            }
 
-            // SWOLF (20 to 65)
-            const swolfVal = numCols.find((n) => n >= 20 && n <= 65);
-            const swolf = swolfVal ? Math.round(swolfVal) : Math.round(30 + Math.random() * 8);
+            let hrVal = 140;
+            if (hrIdx !== -1 && cols[hrIdx]) {
+              const parsedH = parseFloat(cols[hrIdx]);
+              if (!isNaN(parsedH) && parsedH > 0) hrVal = parsedH;
+            }
 
-            // Heart rate (80 to 205)
-            const hrVal = numCols.find((n) => n >= 80 && n <= 205);
-            const hr = hrVal ? Math.round(hrVal) : Math.round(135 + Math.random() * 25);
+            let maxHrVal = hrVal + 18;
+            if (maxHrIdx !== -1 && cols[maxHrIdx]) {
+              const parsedMH = parseFloat(cols[maxHrIdx]);
+              if (!isNaN(parsedMH) && parsedMH > 0) maxHrVal = parsedMH;
+            }
 
-            // Duration
-            const timeCol = cols.find((c) => c.includes(':'));
-            const timeSecs = parseDurationString(timeCol);
+            let strokesVal = Math.round((distVal / 25) * 15);
+            if (strokesIdx !== -1 && cols[strokesIdx]) {
+              const parsedSt = parseFloat(cols[strokesIdx].replace(/,/g, ''));
+              if (!isNaN(parsedSt) && parsedSt > 0) strokesVal = parsedSt;
+            }
 
-            // Pace calculation
-            const paceSecsPer100 = Math.round((timeSecs / dist) * 100) || 90;
-            const pMins = Math.floor(paceSecsPer100 / 60);
-            const pSecs = paceSecsPer100 % 60;
-            const paceStr = `${pMins}:${pSecs < 10 ? '0' : ''}${pSecs}`;
+            let dateVal = new Date().toISOString().split('T')[0];
+            if (dateIdx !== -1 && cols[dateIdx]) {
+              const matchD = cols[dateIdx].match(/\d{4}-\d{2}-\d{2}/);
+              if (matchD) dateVal = matchD[0];
+            }
 
-            // Generate Laps breakdown for this workout
-            const lapCount = Math.max(3, Math.min(10, Math.floor(dist / 400)));
-            const lapDist = Math.round(dist / lapCount / 25) * 25 || 250;
+            let titleVal = `Natación Garmin Real (${Math.round(distVal)}m)`;
+            if (titleIdx !== -1 && cols[titleIdx] && cols[titleIdx] !== '--') {
+              titleVal = `${cols[titleIdx]} (${Math.round(distVal)}m)`;
+            }
+
+            let paceVal = '1:30';
+            if (paceIdx !== -1 && cols[paceIdx] && cols[paceIdx].includes(':')) {
+              paceVal = cols[paceIdx];
+            }
+
+            const lapCount = Math.max(3, Math.min(8, Math.floor(distVal / 400)));
+            const lapDist = Math.round(distVal / lapCount / 25) * 25 || 250;
             let sessionLaps = [];
             for (let i = 1; i <= lapCount; i++) {
               sessionLaps.push({
                 lap: i,
                 dist: lapDist,
-                pace: paceStr,
-                swolf: Math.max(20, swolf + Math.round((Math.random() - 0.5) * 4)),
-                strokes: Math.round(13 + Math.random() * 4),
-                hr: Math.round(hr + (Math.random() - 0.5) * 10),
+                pace: paceVal,
+                swolf: Math.round(swolfVal),
+                strokes: Math.round(strokesVal / lapCount),
+                hr: Math.round(hrVal),
               });
             }
 
-            // Title
-            const titleCol = cols.find((c) => c.toLowerCase().includes('swim') || c.toLowerCase().includes('natación') || c.toLowerCase().includes('piscina') || c.toLowerCase().includes('open water')) || `Entrenamiento Garmin Natación #${idx}`;
-
             importedSessions.push({
               id: `garmin-csv-row-${Date.now()}-${idx}`,
-              date: sessionDate,
-              title: titleCol,
+              date: dateVal,
+              title: titleVal,
               poolLength: 25,
-              totalDistance: dist,
-              totalTimeSeconds: timeSecs,
-              avgSwolf: swolf,
-              avgPace100m: paceStr,
-              avgHeartRate: hr,
-              maxHeartRate: hr + 18,
-              totalStrokes: Math.round((dist / 25) * 14.5),
-              calories: Math.round(dist * 0.22),
-              trainingLoad: Math.round(dist * 0.065),
+              totalDistance: Math.round(distVal),
+              totalTimeSeconds: Math.round((distVal / 100) * 90),
+              avgSwolf: Math.round(swolfVal),
+              avgPace100m: paceVal,
+              avgHeartRate: Math.round(hrVal),
+              maxHeartRate: Math.round(maxHrVal),
+              totalStrokes: Math.round(strokesVal),
+              calories: Math.round(distVal * 0.22),
+              trainingLoad: Math.round(distVal * 0.065),
               laps: sessionLaps,
-              strokesDistribution: { freestyle: 85, backstroke: 10, breaststroke: 5, butterfly: 0 },
+              strokesDistribution: { freestyle: 90, backstroke: 10, breaststroke: 0, butterfly: 0 },
               hrZones: { z1: 20, z2: 45, z3: 25, z4: 10 },
             });
           });
